@@ -1,0 +1,7 @@
+# kit's PDF defaults. A document's own YAML front matter overrides any of these.
+papersize: a4
+fontsize: 10.5pt
+margin:
+  x: 2cm
+  y: 2cm
+page-numbering: "1"

@@ -25,12 +25,13 @@ signed in.
 
 | What | Folder |
 |---|---|
-| The `gsuite` and `gpy` commands | `%USERPROFILE%\.local\bin\` (added to your PATH) |
+| The `gsuite`, `gpy` and `kit` commands | `%USERPROFILE%\.local\bin\` (added to your PATH) |
 | The program | `%APPDATA%\uv\data\tools\workspace-cli\` |
 | Its own Python 3.12 (shared with any other uv tools) | `%APPDATA%\uv\data\python\` |
 | The installer's private uv | `%LOCALAPPDATA%\gsuite\uv\` |
+| kit's document engines (pandoc, Typst) | `%LOCALAPPDATA%\gsuite\tools\` |
 | **Your sign-in** (treat it like a password; never share it) | `%APPDATA%\gsuite\token.json` |
-| Claude Code skill and approval rules | `%USERPROFILE%\.claude\skills\gsuite\`, `%USERPROFILE%\.claude\settings.json` |
+| Claude Code skills (gsuite, kit) and approval rules | `%USERPROFILE%\.claude\skills\gsuite\`, `%USERPROFILE%\.claude\skills\kit\`, `%USERPROFILE%\.claude\settings.json` |
 
 ## Update, check, remove
 
@@ -66,3 +67,7 @@ checks; it changes nothing:
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/kathanshah/workspace-cli/main/windows/test-install.ps1 | iex"
 ```
+
+Windows 10 on an ARM laptop cannot run kit's Word/PDF converter (pandoc ships for x64 only, and
+only Windows 11 runs x64 programs on ARM). Everything else works; `kit convert` reports the
+problem. Windows 11 on ARM is fine.

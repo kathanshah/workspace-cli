@@ -29,10 +29,28 @@ Check ((Test-Path $settings) -and (Select-String -Quiet 'PowerShell\(gsuite writ
 & $gs whoami
 Check ($LASTEXITCODE -eq 0) 'signed in (exit 0)'
 
+$kit = Join-Path $bin 'kit.exe'
+Check (Test-Path (Join-Path $env:USERPROFILE '.claude\skills\kit\SKILL.md')) 'Claude Code kit skill'
+Check (Test-Path (Join-Path $env:LOCALAPPDATA 'gsuite\tools\pandoc-3.14\pandoc.exe')) 'kit: pandoc downloaded'
+Check (Test-Path (Join-Path $env:LOCALAPPDATA 'gsuite\tools\typst-0.15.1\typst.exe')) 'kit: Typst downloaded'
+$work = Join-Path $env:TEMP "kit-check-$PID"
+New-Item -ItemType Directory -Force $work | Out-Null
+[IO.File]::WriteAllText((Join-Path $work 'q.md'), "# Quote $([char]0x0930)$([char]0x093E)$([char]0x092E)`n`n| Item | Price |`n|---|--:|`n| Laptop | $([char]0x20B9)12,500 |`n", (New-Object Text.UTF8Encoding $false))
+& $kit convert (Join-Path $work 'q.md') pdf
+Check ($LASTEXITCODE -eq 0) 'kit: Markdown to PDF'
+$prevEnc = [Console]::OutputEncoding
+[Console]::OutputEncoding = [Text.Encoding]::UTF8   # read kit's UTF-8 output as UTF-8
+$text = & $kit pdf text (Join-Path $work 'q.pdf') | Out-String
+[Console]::OutputEncoding = $prevEnc
+Check ($text -match 'Laptop' -and $text.Contains([string][char]0x20B9) -and $text.Contains([string][char]0x0930)) 'kit: PDF text read back with ₹ and Hindi'
+& $kit convert (Join-Path $work 'q.md') docx
+Check ($LASTEXITCODE -eq 0) 'kit: Markdown to Word'
+Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
+
 $bash = Join-Path $env:ProgramFiles 'Git\bin\bash.exe'
 if (Test-Path $bash) {
-  & $bash -lc 'gsuite --version && gpy -c "print(chr(8377))"'
-  Check ($LASTEXITCODE -eq 0) 'gsuite and gpy work from Git Bash (as Claude Code runs them)'
+  & $bash -lc 'gsuite --version && gpy -c "print(chr(8377))" && kit --version'
+  Check ($LASTEXITCODE -eq 0) 'gsuite, gpy and kit work from Git Bash (as Claude Code runs them)'
 } else {
   Write-Host '  --   Git Bash not installed (Claude Code will use PowerShell; skipped)'
 }

@@ -179,6 +179,10 @@ def main(argv: list[str] | None = None) -> None:
             code = EXIT_FAIL
     except KeyboardInterrupt:
         code = 130
+    except BrokenPipeError:  # `gsuite read ... | head`: the reader stopped early, which is fine
+        import os
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        code = 0
     except Exception as e:
         from google.auth.exceptions import GoogleAuthError
         from googleapiclient.errors import HttpError

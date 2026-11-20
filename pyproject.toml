@@ -1,7 +1,7 @@
 [project]
 name = "workspace-cli"
-version = "1.1.0"
-description = "Google Sheets and Docs from the terminal, for people and AI agents (gsuite)."
+version = "1.2.0"
+description = "Google Sheets and Docs (gsuite) and everyday file and web tools (kit) for people and AI agents."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
@@ -17,11 +17,19 @@ dependencies = [
     "openpyxl==3.1.5",
     "pandas==3.1.1",
     "requests==2.34.2",
+    # kit (local files and the web)
+    "pdfplumber==0.11.10",
+    "pypdf==7.1.1",
+    "pillow==13.0.0",
+    "xlrd==2.0.2",
+    "trafilatura==2.3.1",
+    "ddgs==9.16.1",
 ]
 
 [project.scripts]
 gsuite = "workspace_cli.cli:main"
 gpy = "workspace_cli.gpy:main"
+kit = "kit.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kathanshah/workspace-cli"
@@ -31,7 +39,7 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/workspace_cli", "src/gworkspace"]
+packages = ["src/workspace_cli", "src/gworkspace", "src/kit"]
 # Git-ignored on purpose (see .gitignore) but must be in the wheel.
 artifacts = ["src/workspace_cli/client.json"]
 

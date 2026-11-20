@@ -33,3 +33,8 @@ def path_fix() -> str:
 def update() -> int:
     # Replacing the running program is fine on macOS, so the installer runs right here.
     return subprocess.call(["sh", "-c", INSTALL_LINE])
+
+
+def data_dir() -> Path:
+    """gsuite's private program files (its uv, kit's document engines); removed by the uninstaller."""
+    return Path.home() / ".local" / "share" / "gsuite"

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Removes gsuite from this Mac: the program, its sign-in, its Claude Code skill and rules, and the
-# installer's private uv. Paste into Terminal:
+# Removes gsuite and kit from this Mac: the programs, the sign-in, the Claude Code skills and rules,
+# kit's document engines and the installer's private uv. Paste into Terminal:
 #
 #   curl -LsSf https://github.com/kathanshah/workspace-cli/releases/latest/download/uninstall.sh | sh
 #
@@ -25,11 +25,11 @@ if [ -x "$UV" ]; then
   UV_TOOL_BIN_DIR="$BIN" "$UV" tool uninstall workspace-cli >/dev/null 2>&1 || true
 fi
 rm -rf "$TOOL"
-rm -f "$BIN/gsuite" "$BIN/gpy"
+rm -f "$BIN/gsuite" "$BIN/gpy" "$BIN/kit"
 rm -rf "$HOME/.local/share/gsuite" "$HOME/.config/gsuite"
 
 left=""
-for p in "$BIN/gsuite" "$TOOL" "$HOME/.config/gsuite" "$HOME/.claude/skills/gsuite"; do
+for p in "$BIN/gsuite" "$BIN/kit" "$TOOL" "$HOME/.config/gsuite" "$HOME/.claude/skills/gsuite" "$HOME/.claude/skills/kit"; do
   [ -e "$p" ] && left="$left $p"
 done
 if [ -n "$left" ]; then

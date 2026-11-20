@@ -25,12 +25,13 @@ you signed in.
 
 | What | Folder |
 |---|---|
-| The `gsuite` and `gpy` commands | `~/.local/bin/` (added to your PATH) |
+| The `gsuite`, `gpy` and `kit` commands | `~/.local/bin/` (added to your PATH) |
 | The program | `~/.local/share/uv/tools/workspace-cli/` |
 | Its own Python 3.12 (shared with any other uv tools) | `~/.local/share/uv/python/` |
 | The installer's private uv | `~/.local/share/gsuite/uv/` |
+| kit's document engines (pandoc, Typst) | `~/.local/share/gsuite/tools/` |
 | **Your sign-in** (treat it like a password; never share it) | `~/.config/gsuite/token.json` (readable only by you) |
-| Claude Code skill and approval rules | `~/.claude/skills/gsuite/`, `~/.claude/settings.json` |
+| Claude Code skills (gsuite, kit) and approval rules | `~/.claude/skills/gsuite/`, `~/.claude/skills/kit/`, `~/.claude/settings.json` |
 
 ## Update, check, remove
 

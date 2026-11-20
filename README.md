@@ -1,8 +1,13 @@
-# gsuite
+# gsuite and kit
 
-Read, write and create Google Sheets and Docs from the terminal, and let AI agents like
-Claude Code do it for you. Built for the SPURGE Rentals team: each person signs in once with
-their own `@spurge.rentals` Google account and stays signed in.
+Two commands for the SPURGE Rentals team, for people and for AI agents like Claude Code:
+
+- **gsuite** reads, writes and creates Google Sheets and Docs. Each person signs in once with
+  their own `@spurge.rentals` Google account and stays signed in.
+- **kit** handles everyday files and the web on your own computer: Markdown to PDF or Word,
+  PDF text, tables, merging and shrinking, Excel and CSV conversions, reading web pages.
+
+One install line sets up both.
 
 ## Install: pick your computer
 
@@ -43,11 +48,31 @@ can be changed.
 
 If anything goes wrong, run `gsuite doctor` and send the output to Kathan.
 
+## kit: files and the web
+
+Ask Claude in plain words; it uses kit:
+
+> Turn this quote into a PDF. / Make a Word version of notes.md.
+>
+> Pull the transactions table out of statement.pdf into Excel.
+>
+> Merge these three PDFs and make the result small enough to email.
+>
+> Combine jan.csv, feb.csv and mar.csv into one sheet.
+>
+> Read this page and summarise the rental prices: https://...
+
+kit writes new files (next to the original unless you name another place) and never overwrites
+anything: a taken name becomes `name (1).pdf`. It does not open password-protected PDFs, and when
+converting it leaves out images from the web or from other folders. `kit --help` lists everything;
+`kit guide` is the guide for agents.
+
 ## For other AI agents
 
-`gsuite guide` prints the commands and the rules agents must follow. To set up an agent other
-than Claude Code, add this line to its instructions file: *"Before using Google Sheets or Docs,
-run `gsuite guide` and follow it."*
+`gsuite guide` and `kit guide` print the commands and the rules agents must follow. To set up an
+agent other than Claude Code, add this to its instructions file: *"Before using Google Sheets or
+Docs, run `gsuite guide` and follow it. For converting or reading documents, PDFs, spreadsheets
+or web pages, run `kit guide` and follow it."*
 
 ## Maintainers
 

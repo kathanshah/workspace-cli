@@ -1,4 +1,4 @@
-# gsuite installer for Windows 10/11 (x64 and ARM). Paste into PowerShell (or Command Prompt, or Win+R):
+# gsuite and kit installer for Windows 10/11 (x64 and ARM). Paste into PowerShell (or Command Prompt, or Win+R):
 #
 #   powershell -ExecutionPolicy ByPass -c "irm https://github.com/kathanshah/workspace-cli/releases/latest/download/install.ps1 | iex"
 #
@@ -13,7 +13,7 @@
 # (5.1 decodes captured output in the console code page, which garbles non-ASCII user names).
 
 $ErrorActionPreference = 'Continue'
-$Version = '1.1.0'
+$Version = '1.2.0'
 $ExcludeNewer = '2026-11-20T00:00:00Z'   # dependency snapshot (a past date): every install resolves the same versions
 $UvVersion = '0.13.9'                    # the installer's own uv, kept private (see below)
 $Repo = 'kathanshah/workspace-cli'
@@ -63,11 +63,16 @@ $env:Path = "$Bin;$env:Path"         # ...and for the rest of this script
 & $gs --version
 if ($LASTEXITCODE -ne 0) { throw 'gsuite was installed but does not start. Send this output to Kathan.' }
 
-# 3. Claude Code: skill + approval rules. A problem here is reported (and by doctor); sign-in still goes ahead.
+# 3. Claude Code: skills + approval rules. A problem here is reported (and by doctor); sign-in still goes ahead.
 Say 'Setting up Claude Code'
 & $gs install-agent claude
 
-# 4. Sign-in, unless this PC is already signed in (exit 3 = not signed in; anything else is reported).
+# 4. kit's document engines (pandoc, Typst; about 60 MB, once). If this fails, kit retries on first use.
+Say 'Setting up kit (documents, PDFs, spreadsheets, web)'
+& (Join-Path $Bin 'kit.exe') setup
+if ($LASTEXITCODE -ne 0) { Say "Could not download kit's document tools now; kit will try again when first used." }
+
+# 5. Sign-in, unless this PC is already signed in (exit 3 = not signed in; anything else is reported).
 if (-not $env:GSUITE_SKIP_LOGIN) {
   & $gs whoami --quiet
   $status = $LASTEXITCODE

@@ -1,5 +1,5 @@
 #!/bin/sh
-# gsuite installer for macOS (Apple Silicon and Intel). Paste into Terminal:
+# gsuite and kit installer for macOS (Apple Silicon and Intel). Paste into Terminal:
 #
 #   curl -LsSf https://github.com/kathanshah/workspace-cli/releases/latest/download/install.sh | sh
 #
@@ -8,7 +8,7 @@
 # The Windows installer is windows/install.ps1; keep the two in step (see AGENTS.md).
 set -eu
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 EXCLUDE_NEWER="2026-11-20T00:00:00Z"   # dependency snapshot (a past date): every install resolves the same versions
 UV_VERSION="0.13.9"                     # the installer's own uv, kept private (see below)
 REPO="kathanshah/workspace-cli"
@@ -47,11 +47,15 @@ say "Installing gsuite $VERSION"
 export PATH="$BIN:$PATH"                           # ...and for the rest of this script
 "$GS" --version || fail "gsuite was installed but does not start; send this output to Kathan"
 
-# 3. Claude Code: skill + approval rules. A problem here is reported (and by doctor); sign-in still goes ahead.
+# 3. Claude Code: skills + approval rules. A problem here is reported (and by doctor); sign-in still goes ahead.
 say "Setting up Claude Code"
 "$GS" install-agent claude || true
 
-# 4. Sign-in, unless this Mac is already signed in (exit 3 = not signed in; anything else is reported).
+# 4. kit's document engines (pandoc, Typst; about 60 MB, once). If this fails, kit retries on first use.
+say "Setting up kit (documents, PDFs, spreadsheets, web)"
+"$BIN/kit" setup || say "Could not download kit's document tools now; kit will try again when first used."
+
+# 5. Sign-in, unless this Mac is already signed in (exit 3 = not signed in; anything else is reported).
 if [ -z "${GSUITE_SKIP_LOGIN:-}" ]; then
   status=0
   "$GS" whoami --quiet || status=$?

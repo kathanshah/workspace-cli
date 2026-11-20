@@ -538,7 +538,7 @@ def test_export_refuses_impossible_conversion(monkeypatch, tmp_path, capsys):
     assert e.value.code == cli.EXIT_FAIL and ".docx" in capsys.readouterr().err
 
 
-def test_uploaded_csv_in_legacy_encoding_is_a_clear_error(monkeypatch, capsys):
+def test_uploaded_csv_in_legacy_encoding_is_read_with_a_note(monkeypatch, capsys):
     class Drive:
         def files(self): return self
         def get_media(self, **kw): return _Req("Name\ncaf\xe9\n".encode("cp1252"))
@@ -547,7 +547,8 @@ def test_uploaded_csv_in_legacy_encoding_is_a_clear_error(monkeypatch, capsys):
     monkeypatch.setattr(api, "drive", lambda: Drive())
     with pytest.raises(SystemExit) as e:
         cli.main(["read", "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789"])
-    assert e.value.code == cli.EXIT_FAIL and "UTF-8" in capsys.readouterr().err
+    out = capsys.readouterr()
+    assert e.value.code == 0 and "café" in out.out and "CSV UTF-8" in out.err
 
 
 def test_logout_removes_leftover_token_copies(isolated):

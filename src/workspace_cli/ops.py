@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 from . import api
-from .files import UserError, atomic_download, decode_text, read_csv_arg, read_text_arg, write_csv
+from .files import UserError, atomic_download, read_csv_arg, read_text_arg, write_csv
 
 GOOGLE = "application/vnd.google-apps."
 MIME = {"sheet": GOOGLE + "spreadsheet", "doc": GOOGLE + "document"}
@@ -149,45 +149,18 @@ def read(link: str, fid: str, rng: str | None, show_all: bool, formulas: bool) -
     print_rows(res.get("values", []), show_all)
 
 
-def _cell(value) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, float) and value.is_integer():
-        return str(int(value))
-    return str(value)
-
-
 def read_uploaded(fid: str, m: dict, rng: str | None, show_all: bool) -> None:
     """An uploaded .xlsx or .csv in Drive: download it and print it as CSV (read-only, whole tab)."""
     if m["mimeType"] not in (XLSX, "text/csv"):
         raise wrong_type(m, "Sheet")
+    from kit.sheet import rows_from_bytes
+
     data = api.run(api.drive().files().get_media(fileId=fid, supportsAllDrives=True))
-    if m["mimeType"] == "text/csv":
-        rows = list(csv.reader(io.StringIO(decode_text(data, f"'{m['name']}'"), newline="")))
-    else:
-        import zipfile
-
-        import openpyxl
-
-        tab = rng.split("!")[0] if rng and "!" in rng else (rng if rng and not CELL_REF.fullmatch(rng.strip()) else None)
-        try:
-            wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-        except Exception as e:  # zipfile.BadZipFile, InvalidFileException, KeyError: protected or damaged
-            if isinstance(e, (zipfile.BadZipFile, KeyError, ValueError, OSError)) or "openpyxl" in type(e).__module__:
-                raise UserError(f"Could not open '{m['name']}' (password-protected or damaged?). "
-                                "Open it in Google Drive and use File > Save as Google Sheets.")
-            raise
-        names = wb.sheetnames
-        if tab is not None and unquote(tab) not in names:
-            raise UserError(f"No tab {unquote(tab)!r} in '{m['name']}'. Tabs: {', '.join(names)}")
-        ws = wb[unquote(tab)] if tab is not None else next(
-            (w for w in wb.worksheets if w.sheet_state == "visible"), wb.worksheets[0])
-        rows = [[_cell(v) for v in row] for row in ws.iter_rows(values_only=True)]
-        if rng and CELL_REF.fullmatch(rng.split("!")[-1].strip()):
-            print("(uploaded Excel file: printing the whole tab; cell ranges work on Google Sheets only)",
-                  file=sys.stderr)
-    while rows and not any(c.strip() for c in rows[-1]):
-        rows.pop()
+    tab = rng.split("!")[0] if rng and "!" in rng else (rng if rng and not CELL_REF.fullmatch(rng.strip()) else None)
+    ext = ".csv" if m["mimeType"] == "text/csv" else ".xlsx"
+    rows, _ = rows_from_bytes(data, ext, f"'{m['name']}'", tab if ext == ".xlsx" else None)
+    if ext == ".xlsx" and rng and CELL_REF.fullmatch(rng.split("!")[-1].strip()):
+        print("(uploaded Excel file: printing the whole tab; cell ranges work on Google Sheets only)", file=sys.stderr)
     print_rows(rows, show_all)
 
 

@@ -40,3 +40,8 @@ def update() -> int:
                      creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
     print("Updating gsuite in a new window. Your sign-in is kept.")
     return 0
+
+
+def data_dir() -> Path:
+    """gsuite's private program files (its uv, kit's document engines); removed by the uninstaller."""
+    return Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local") / "gsuite"

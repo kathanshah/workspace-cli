@@ -88,11 +88,21 @@ def doctor() -> int:
             except Exception as e:
                 line(BAD, f"{name} API not reachable: {e}", "check the internet connection")
 
+    from kit import engines
+
+    try:
+        if all(engines.ready(n) for n in engines.VERSIONS):
+            line(OK, "kit document tools ready (" + ", ".join(f"{n} {v}" for n, v in engines.VERSIONS.items()) + ")")
+        else:
+            line(BAD, "kit's document tools (pandoc, Typst) are not downloaded yet", "kit setup")
+    except Exception as e:
+        line(INFO, f"kit document tools: {e}")
+
     skill = claude_dir() / "skills" / "gsuite" / "SKILL.md"
-    if skill.exists() and claude_rules_ok():
+    if skill.exists() and (claude_dir() / "skills" / "kit" / "SKILL.md").exists() and claude_rules_ok():
         line(OK, "Claude Code skill and approval rules installed")
     elif skill.exists():
-        line(BAD, "Claude Code approval rules for gsuite are missing", "gsuite install-agent claude")
+        line(BAD, "Claude Code skills or approval rules for gsuite/kit are missing", "gsuite install-agent claude")
     elif claude_dir().exists():
         line(BAD, "Claude Code is set up here but the gsuite skill is missing", "gsuite install-agent claude")
     else:

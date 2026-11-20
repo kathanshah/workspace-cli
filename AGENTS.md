@@ -1,7 +1,12 @@
-# Working on gsuite
+# Working on gsuite and kit
 
 Guide for anyone (person or agent) changing this repository. Users read [README.md](README.md);
-agents that *use* gsuite read `gsuite guide` (`src/workspace_cli/guide.md`).
+agents that *use* the tools read `gsuite guide` (`src/workspace_cli/guide.md`) and `kit guide`
+(`src/kit/guide.md`).
+
+One wheel ships three commands: `gsuite` (Google Sheets and Docs), `gpy` (Python with the same
+libraries) and `kit` (local files and the web, in `src/kit/`). They share the installer, the
+update path, `gsuite doctor` and `gsuite install-agent claude`.
 
 ## Layout
 
@@ -25,6 +30,12 @@ Everything else is shared and never checks the OS.
 | `src/workspace_cli/guide.md` | The one source of agent rules (`gsuite guide`) |
 | `src/workspace_cli/client.json` | The OAuth Desktop client (see below); git-ignored, added at build time |
 | `src/gworkspace/` | Import shim for `gpy` scripts: `from gworkspace import sheet` |
+| `src/kit/cli.py` | `kit` command line and exit codes (1 input, 2 usage, 5 network) |
+| `src/kit/convert.py` | `kit convert`: pandoc; PDF via Typst in two steps (see the module docstring) |
+| `src/kit/engines.py` | pinned pandoc and Typst downloads per OS/CPU, SHA-256 checked (`kit setup`) |
+| `src/kit/pdf.py`, `sheet.py`, `web.py` | `kit pdf`, `kit sheet` (also reads Drive uploads for `gsuite read`), `kit web` |
+| `src/kit/outputs.py` | the never-overwrite rule: every output goes through `save()` |
+| `src/kit/guide.md`, `pdf-header.typ`, `pdf-style.yaml` | `kit guide`; the PDF look |
 
 ## How an install works (both OSes)
 
@@ -36,8 +47,14 @@ Everything else is shared and never checks the OS.
    (`UV_PYTHON_PREFERENCE=only-managed`), with `--no-build` and `--exclude-newer`, into the fixed
    bin folder `~/.local/bin` (`UV_TOOL_BIN_DIR`); `uv tool update-shell` puts it on the user PATH
    for new windows, and the installer adds it to its own PATH so the closing `doctor` finds it.
-3. `gsuite install-agent claude` writes the skill and rules; then sign-in (skipped if signed in);
-   then `gsuite doctor`.
+3. `gsuite install-agent claude` writes the gsuite and kit skills and rules; `kit setup`
+   downloads pandoc and Typst into `<data dir>/tools/` (non-fatal: kit retries on first use);
+   then sign-in (skipped if signed in); then `gsuite doctor`.
+
+pandoc and Typst are downloaded rather than pip-installed because their Python packages have no
+Windows-on-ARM build. To move to new versions, update `PANDOC`/`TYPST` and all eight hashes in
+`src/kit/engines.py` (from the GitHub release asset lists), and the paths in both test-install
+scripts. Old versions are deleted when the new ones install.
 
 ## The sign-in client
 
@@ -68,8 +85,15 @@ permission" until the person runs `gsuite login`, so add scopes rarely and say s
   PowerShell installers run through `iex`: never `exit`, never redirect a native command's stderr.
 - OS-specific behaviour goes in `platforms/windows.py` and `platforms/macos.py` (same names in
   both); shared code calls `platforms.current` and never tests `os.name`.
-- Writes are never auto-approved: `agents.WRITE_CMDS` become Claude Code `ask` rules. A new
-  command that changes data goes in that list.
+- Google writes are never auto-approved: `agents.WRITE_CMDS` become Claude Code `ask` rules. A new
+  command that changes a Google file, or saves one locally, goes in `WRITE_CMDS`.
+- kit's file commands (`agents.KIT_CMDS`) are auto-approved, which holds only while kit keeps its
+  limits: outputs never overwrite (`outputs.save`), never land in hidden folders
+  (`outputs.check_folder`), and `kit convert` never fetches from the web or reads outside the
+  document's folder (`safe-media.lua`; no LaTeX/reST/Org readers, which can include files).
+  `kit pdf render` asks (it shows the AI page images before it knows what they are), and
+  `kit web` has no rule, so it prompts. A new kit command that reaches the network or reads files
+  it was not given must not go under an allowed prefix.
 - Exit codes are part of the contract with agents (see `guide.md`): 1 input, 2 usage, 3 sign-in,
   4 Google refused, 5 network or passing problem, 6 change may or may not have been applied.
 - Changes that must not happen twice (append, append-doc, create, add-tab) go through

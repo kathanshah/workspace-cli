@@ -31,8 +31,10 @@ git fetch -q origin main
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || fail "push main first"
 if gh release view "v$v" >/dev/null 2>&1; then fail "v$v is already released; bump the version"; fi
 
-say "Tests"
-uv run --locked -q pytest -q
+say "Tests (with kit's real document engines)"
+ENGINES="$HOME/.cache/kit-release-engines"   # downloaded once, SHA-256 checked, reused by later releases
+KIT_TOOLS="$ENGINES" uv run --locked -q kit setup >/dev/null
+KIT_TEST_TOOLS="$ENGINES" uv run --locked -q pytest -q -rs
 
 say "Build"
 rm -rf dist
