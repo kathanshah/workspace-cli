@@ -1,0 +1,93 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Every staff machine type: Windows x64 and ARM, Apple Silicon and Intel Macs.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - name: Versions agree
+        run: |
+          v=$(grep -m1 '^version' pyproject.toml | cut -d'"' -f2)
+          grep -q "^VERSION=\"$v\"" install.sh
+          grep -q "^\$Version = '$v'" install.ps1
+          d=$(grep -m1 '^exclude-newer' pyproject.toml | cut -d'"' -f2)
+          grep -q "^EXCLUDE_NEWER=\"$d\"" install.sh
+          grep -q "^\$ExcludeNewer = '$d'" install.ps1
+      - name: Add the OAuth client
+        env:
+          CLIENT: ${{ secrets.GSUITE_CLIENT_JSON }}
+        run: |
+          test -n "$CLIENT" || { echo "GSUITE_CLIENT_JSON secret is missing"; exit 1; }
+          printf '%s' "$CLIENT" > src/workspace_cli/client.json
+      - run: uv build --wheel
+      - name: Wheel carries the client
+        run: unzip -l dist/*.whl | grep -q workspace_cli/client.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dist
+          path: |
+            dist/*.whl
+            install.sh
+            install.ps1
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-11-arm, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - name: Add the OAuth client
+        shell: bash
+        env:
+          CLIENT: ${{ secrets.GSUITE_CLIENT_JSON }}
+        run: printf '%s' "$CLIENT" > src/workspace_cli/client.json
+      - run: uv run --locked --python 3.12 pytest -q
+
+  # The installer exactly as a teammate runs it: no uv, no Python, nothing set up beforehand.
+  fresh-install:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, windows-11-arm, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dist
+          path: dist
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:GSUITE_WHEEL = (Get-ChildItem dist/dist/*.whl).FullName
+          $env:GSUITE_SKIP_LOGIN = '1'
+          powershell -ExecutionPolicy ByPass -c "Get-Content -Raw dist/install.ps1 | iex"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Install (macOS)
+        if: runner.os == 'macOS'
+        run: GSUITE_WHEEL="$(ls "$PWD"/dist/dist/*.whl)" GSUITE_SKIP_LOGIN=1 sh dist/install.sh
+      - name: Installed gsuite works
+        shell: bash
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          gsuite --version
+          gsuite guide | grep -q "Rules for AI agents"
+          gpy -c "import gworkspace, pandas, gspread; print('₹ राम gpy ok')" | cat
+          test -f "$HOME/.claude/skills/gsuite/SKILL.md"
+          grep -q 'gsuite write' "$HOME/.claude/settings.json"
+          set +e; gsuite whoami; code=$?; set -e
+          test "$code" = 3   # not signed in -> exit 3, never a crash

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+.pytest_cache/
+.DS_Store
+# Sign-in files are per person and live outside the repo; never commit one.
+token*.json
+# The OAuth client is added at release build time from the GSUITE_CLIENT_JSON repository secret
+# (see AGENTS.md), so it never sits in git history where secret scanners flag it.
+src/workspace_cli/client.json
