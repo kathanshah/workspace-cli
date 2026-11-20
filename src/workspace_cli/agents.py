@@ -56,6 +56,23 @@ class SettingsError(Exception):
     pass
 
 
+def normalise_permissions(data: dict) -> dict:
+    """settings.json as people actually leave it: permissions or a rule list may be missing, null,
+    or a single rule written as a string. Make them dicts and lists without dropping any rule."""
+    perms = data.get("permissions")
+    if not isinstance(perms, dict):
+        perms = data["permissions"] = {}
+    for key in ("allow", "ask"):
+        value = perms.get(key)
+        if value is None:
+            perms[key] = []
+        elif isinstance(value, str):
+            perms[key] = [value]
+        elif not isinstance(value, list):
+            raise SettingsError(f"permissions.{key} in settings.json is neither a list nor a rule; fix it by hand.")
+    return perms
+
+
 def merge_settings(path: Path) -> str:
     """Add gsuite's rules to a Claude Code settings.json, keeping everything already there."""
     if path.exists():
@@ -71,7 +88,7 @@ def merge_settings(path: Path) -> str:
             shutil.copy2(path, backup)
     else:
         data = {}
-    perms = data.setdefault("permissions", {})
+    perms = normalise_permissions(data)
     allow, ask = rules()
     added = 0
     # Drop gsuite auto-approvals an older version added that this version no longer gives.
@@ -113,3 +130,35 @@ def claude_rules_ok() -> bool:
         return "Bash(gsuite write *)" in data["permissions"]["ask"]
     except Exception:
         return False
+
+
+def remove_claude() -> int:
+    """Undo install_claude: delete the skill and every gsuite/gpy rule, keep everything else."""
+    base = claude_dir()
+    skill_dir = base / "skills" / "gsuite"
+    if skill_dir.exists():
+        shutil.rmtree(skill_dir)
+        print(f"Claude Code: removed {skill_dir}")
+    path = base / "settings.json"
+    if not path.exists():
+        return 0
+    try:
+        data = json.loads(path.read_text(encoding="utf-8-sig") or "{}")
+        if not isinstance(data, dict):
+            raise ValueError
+        perms = normalise_permissions(data)
+    except (ValueError, SettingsError):
+        print(f"Claude Code: PROBLEM: {path} is not valid JSON or has an odd shape; gsuite rules left in it.")
+        return 1
+    ours = ("Bash(gsuite ", "PowerShell(gsuite ", "Bash(gpy", "PowerShell(gpy")
+    removed = 0
+    for key in ("allow", "ask"):
+        kept = [r for r in perms.get(key, []) if not r.startswith(ours)]
+        removed += len(perms.get(key, [])) - len(kept)
+        if key in perms:
+            perms[key] = kept
+    tmp = path.with_name(path.name + ".gsuite.tmp")
+    tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+    print(f"Claude Code: {removed} gsuite permission rules removed from {path}")
+    return 0

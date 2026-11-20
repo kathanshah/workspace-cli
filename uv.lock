@@ -21,7 +21,7 @@ required-markers = [
 ]
 
 [options]
-exclude-newer = "2026-11-21T00:00:00Z"
+exclude-newer = "2026-11-20T00:00:00Z"
 
 [[package]]
 name = "certifi"
@@ -869,7 +869,7 @@ wheels = [
 
 [[package]]
 name = "workspace-cli"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "google-api-python-client" },

@@ -1,11 +1,17 @@
 """Signed-in Google API clients. Every request retries on rate limits and server errors."""
 from __future__ import annotations
 
+import random
 import re
+import time
 
 from .auth import creds
 
-RETRIES = 5  # googleapiclient backs off exponentially on 429 and 5xx
+RETRIES = 5  # googleapiclient backs off exponentially on 429, 5xx and dropped connections
+
+
+class MaybeApplied(Exception):
+    """A change was sent but the reply was lost: Google may or may not have applied it."""
 
 
 def file_id(url_or_id: str) -> str:
@@ -14,7 +20,29 @@ def file_id(url_or_id: str) -> str:
 
 
 def run(request):
+    """For reads and for changes that are safe to repeat (overwriting the same cells)."""
     return request.execute(num_retries=RETRIES)
+
+
+def run_once(request):
+    """For changes that must not happen twice (append rows, add text, create, add tab).
+
+    googleapiclient would also retry these after a 5xx or a dropped connection, when Google may
+    already have applied them, so only a 429 (refused, nothing applied) is retried here."""
+    from googleapiclient.errors import HttpError
+
+    for attempt in range(RETRIES + 1):
+        try:
+            return request.execute(num_retries=0)
+        except HttpError as e:
+            if getattr(e.resp, "status", 0) == 429 and attempt < RETRIES:
+                time.sleep(min(60, 2 ** attempt + random.random()))
+                continue
+            if getattr(e.resp, "status", 0) >= 500:
+                raise MaybeApplied(f"Google answered with an error ({e.resp.status})") from e
+            raise
+        except (OSError, TimeoutError) as e:
+            raise MaybeApplied(f"the connection dropped ({e})") from e
 
 
 def _build(name: str, version: str):
@@ -36,11 +64,11 @@ def docs():
 
 
 def gc():
-    """gspread client that backs off on rate limits."""
+    """gspread client. (gspread's BackOffHTTPClient is documented as not production ready and
+    retries "no access" errors for minutes, so the plain client is used: problems fail fast.)"""
     import gspread
-    from gspread.http_client import BackOffHTTPClient
 
-    return gspread.authorize(creds(), http_client=BackOffHTTPClient)
+    return gspread.authorize(creds())
 
 
 def sheet(url_or_id: str):

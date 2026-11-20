@@ -1,14 +1,20 @@
 """`gsuite doctor` checks the whole chain and prints a plain fix for each problem; `gsuite update`."""
 from __future__ import annotations
 
-import os
 import platform
 import shutil
-import subprocess
 
-from . import INSTALL_PS1, INSTALL_SH, REPO, __version__
+from . import REPO, __version__
+from .platforms import current
 
 OK, BAD, INFO = "[ok]", "[!!]", "[--]"
+
+
+def version_tuple(v: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(x) for x in v.split("."))
+    except ValueError:
+        return (0,)
 
 
 def latest_version() -> str | None:
@@ -36,7 +42,7 @@ def doctor() -> int:
 
     line(INFO, f"gsuite {__version__}, Python {platform.python_version()}, {platform.system()} {platform.machine()}")
     newest = latest_version()
-    if newest and newest != __version__:
+    if newest and version_tuple(newest) > version_tuple(__version__):
         line(BAD, f"a newer gsuite is available ({newest})", "gsuite update")
     elif newest:
         line(OK, "gsuite is up to date")
@@ -46,8 +52,7 @@ def doctor() -> int:
     if shutil.which("gsuite"):
         line(OK, "gsuite is on PATH")
     else:
-        line(BAD, "gsuite is not on PATH in this terminal",
-             "close and reopen the terminal (or Claude Code); if it persists run: uv tool update-shell")
+        line(BAD, "gsuite is not on PATH in this terminal", current.path_fix())
 
     signed_in = False
     try:
@@ -99,15 +104,7 @@ def doctor() -> int:
 
 def update() -> int:
     newest = latest_version()
-    if newest == __version__:
+    if newest and version_tuple(newest) <= version_tuple(__version__):
         print(f"gsuite {__version__} is already the latest.")
         return 0
-    if os.name == "nt":
-        # A running gsuite.exe cannot replace itself on Windows, so the installer runs in a new window.
-        cmd = (f"Start-Sleep 2; try {{ irm {INSTALL_PS1} | iex }} catch {{ Write-Host $_ -ForegroundColor Red }} "
-               "finally { Read-Host 'Press Enter to close' }")
-        subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", cmd],
-                         creationflags=getattr(subprocess, "CREATE_NEW_CONSOLE", 0))
-        print("Updating gsuite in a new window. Your sign-in is kept.")
-        return 0
-    return subprocess.call(["sh", "-c", f"curl -LsSf {INSTALL_SH} | sh"])
+    return current.update()

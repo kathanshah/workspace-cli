@@ -1,6 +1,6 @@
 [project]
 name = "workspace-cli"
-version = "1.0.0"
+version = "1.1.0"
 description = "Google Sheets and Docs from the terminal, for people and AI agents (gsuite)."
 readme = "README.md"
 license = "MIT"
@@ -43,7 +43,7 @@ testpaths = ["tests"]
 
 [tool.uv]
 # Same snapshot date as EXCLUDE_NEWER in the installers.
-exclude-newer = "2026-11-21T00:00:00Z"
+exclude-newer = "2026-11-20T00:00:00Z"
 # Staff machines: every dependency must have a ready-built wheel for each of these (no compiling).
 required-environments = [
     "sys_platform == 'win32' and platform_machine == 'AMD64'",

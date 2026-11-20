@@ -30,11 +30,9 @@ class SignInNeeded(Exception):
 
 
 def config_dir() -> Path:
-    if env := os.environ.get("GSUITE_HOME"):
-        return Path(env)
-    if os.name == "nt":
-        return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "gsuite"
-    return Path.home() / ".config" / "gsuite"
+    from .platforms import current
+
+    return Path(env) if (env := os.environ.get("GSUITE_HOME")) else current.config_dir()
 
 
 def token_file() -> Path:
@@ -52,11 +50,15 @@ def _save(c) -> None:
     d = config_dir()
     d.mkdir(parents=True, exist_ok=True)
     tmp = d / f"token.{os.getpid()}.tmp"
-    tmp.write_text(c.to_json())
-    if os.name != "nt":
-        os.chmod(d, 0o700)
-        os.chmod(tmp, 0o600)
-    os.replace(tmp, token_file())  # atomic: parallel commands never see a half-written file
+    from .platforms import current
+
+    try:
+        tmp.write_text(c.to_json(), encoding="utf-8")
+        current.secure_dir(d)
+        current.secure_file(tmp)
+        os.replace(tmp, token_file())  # atomic: parallel commands never see a half-written file
+    finally:
+        tmp.unlink(missing_ok=True)  # never leave a copy of the sign-in behind
 
 
 def _email_from_id_token(id_token: str | None) -> str | None:
@@ -130,6 +132,8 @@ def logout() -> bool:
     tf = token_file()
     existed = tf.exists()
     tf.unlink(missing_ok=True)
+    for leftover in config_dir().glob("token.*.tmp") if config_dir().exists() else []:
+        leftover.unlink(missing_ok=True)
     return existed
 
 
@@ -155,7 +159,12 @@ def creds():
         except RefreshError as e:
             if getattr(e, "retryable", False):
                 raise  # a passing Google problem: reported as "try again", not as "sign in again"
-            raise SignInNeeded("the saved sign-in expired, was revoked, or Google wants you to sign in again")
+            # Not retryable: revoked, unused for 6 months, account suspended, admin policy, client
+            # replaced... Signing in again is the fix for all of them; Google's own words say which.
+            reason = str(e.args[0] if e.args else e)[:160]
+            if "admin_policy_enforced" in reason:
+                raise SignInNeeded(f"a Workspace admin setting blocks gsuite for your account ({reason}); ask Kathan")
+            raise SignInNeeded(f"Google no longer accepts the saved sign-in ({reason})")
         try:
             _save(c)
         except OSError:

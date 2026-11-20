@@ -4,29 +4,16 @@ Read, write and create Google Sheets and Docs from the terminal, and let AI agen
 Claude Code do it for you. Built for the SPURGE Rentals team: each person signs in once with
 their own `@spurge.rentals` Google account and stays signed in.
 
-## Install (one line, about two minutes)
+## Install: pick your computer
 
-**Windows:** open **PowerShell** (Start menu, type "PowerShell") and paste:
+| Computer | Guide | One line to paste |
+|---|---|---|
+| **Windows** 10/11 (x64 or ARM) | [windows/README.md](windows/README.md) | in PowerShell: `powershell -ExecutionPolicy ByPass -c "irm https://github.com/kathanshah/workspace-cli/releases/latest/download/install.ps1 \| iex"` |
+| **Mac** (Apple Silicon or Intel) | [macos/README.md](macos/README.md) | in Terminal: `curl -LsSf https://github.com/kathanshah/workspace-cli/releases/latest/download/install.sh \| sh` |
 
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/kathanshah/workspace-cli/releases/latest/download/install.ps1 | iex"
-```
-
-**Mac:** open **Terminal** and paste:
-
-```sh
-curl -LsSf https://github.com/kathanshah/workspace-cli/releases/latest/download/install.sh | sh
-```
-
-What happens:
-
-1. It installs everything it needs. You do not need Python or anything else beforehand.
-2. Your browser opens. Choose your **@spurge.rentals** account, **tick every box** and click
-   **Continue**.
-3. It checks everything and prints `All good.`
-4. Close the window and open a new Claude Code session.
-
-Running the same line again later is safe: it updates gsuite and keeps you signed in.
+When the browser opens, choose your **@spurge.rentals** account, **tick every box** and click
+**Continue**. Then open a new Claude Code session. Each guide covers where things are stored,
+updating, removing, and the problems seen on that system.
 
 ## Use it
 
@@ -38,39 +25,23 @@ In Claude Code, paste a Google Sheet or Doc link and say what you want:
 >
 > Make a new sheet called "Laptop returns Nov" with these columns: ...
 
-Claude reads without asking. Before it changes or creates anything, it shows you the change
+Claude reads without asking. Before it changes, creates or saves anything, it shows you the change
 and Claude Code asks for your approval.
 
-You can also use it yourself:
+You can also use it yourself (`gsuite --help` lists everything):
 
 ```sh
 gsuite read <sheet link> 'Leads!A1:F20'
 gsuite find "debtors" --type sheet
 gsuite create sheet "Laptop returns Nov"
-gsuite --help
 ```
 
 gsuite can open exactly what your account can open in the browser, nothing more. Your edits show
 under your name in the file's version history. Its commands never delete or share files.
+Uploaded Excel or CSV files in Drive can be read and exported, but only Google Sheets and Docs
+can be changed.
 
-## If something goes wrong
-
-Run this and send the output to Kathan:
-
-```sh
-gsuite doctor
-```
-
-| You see | Do this |
-|---|---|
-| `gsuite` is not recognised / command not found | Close and reopen the terminal or Claude Code |
-| `Sign-in needed` | `gsuite login` |
-| `Some permissions were not ticked` | `gsuite login`, and tick every box on Google's screen |
-| `Not found: ... not shared with your account` | Ask the file's owner to share it with you |
-| Google says the app is blocked, or sign-in timed out | You picked a personal account: `gsuite login` and pick your @spurge.rentals one |
-
-To update: `gsuite update`. To remove from a computer: `gsuite logout`, then
-`uv tool uninstall workspace-cli`. (That forgets the sign-in on that computer only.)
+If anything goes wrong, run `gsuite doctor` and send the output to Kathan.
 
 ## For other AI agents
 
@@ -80,4 +51,4 @@ run `gsuite guide` and follow it."*
 
 ## Maintainers
 
-See [AGENTS.md](AGENTS.md) for how it is built, released and tested.
+See [AGENTS.md](AGENTS.md) for the layout, the Windows/macOS split, testing and releasing.

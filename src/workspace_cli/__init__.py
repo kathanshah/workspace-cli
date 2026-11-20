@@ -7,6 +7,5 @@ except PackageNotFoundError:  # running from a source checkout
     __version__ = "0+source"
 
 REPO = "kathanshah/workspace-cli"
-# Installers are attached to every release; "latest" only moves once a release is fully published.
-INSTALL_SH = f"https://github.com/{REPO}/releases/latest/download/install.sh"
-INSTALL_PS1 = f"https://github.com/{REPO}/releases/latest/download/install.ps1"
+# Per-OS installer links and behaviour: see platforms/. Installers are attached to every release;
+# "latest" only moves once a release is fully published.
