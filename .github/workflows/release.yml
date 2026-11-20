@@ -10,6 +10,7 @@ permissions:
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
+    secrets: inherit   # CI needs GSUITE_CLIENT_JSON to build the wheel
 
   # The installers in the README point at releases/latest, which moves only when this succeeds.
   publish:
