@@ -106,5 +106,4 @@ the team after that passes.
 
 Installs use `--no-build`: every dependency must come as a ready-built wheel for Windows x64/ARM
 and macOS Apple Silicon/Intel (`required-environments` in `pyproject.toml` enforces this when
-`uv lock` runs). The `GSUITE_CLIENT_JSON` repository secret is a spare copy of the client from the
-time CI built releases; the release script uses the local `src/workspace_cli/client.json`.
+`uv lock` runs). The release script builds from the local `src/workspace_cli/client.json`.
